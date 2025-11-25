@@ -250,9 +250,16 @@ EH_LSF1 <- EH_LSF1 %>%
 
 # Helper: replace NA with 0 before the first 1 for each worm
 replace_na_before_first_1 <- function(x) {
-  first_event_row <- min(which(x == 1))
-  replace(x, seq_len(first_event_row - 1), 0)
+  first_event_row <- which(x == 1)[1]  # get first index of 1
+  
+  if (is.na(first_event_row)) {
+    return(x)  # no 1 found, return as-is
+  }
+  
+  x[seq_len(first_event_row - 1)][is.na(x[seq_len(first_event_row - 1)])] <- 0
+  return(x)
 }
+
 
 # Apply per worm
 EH_LSF1 <- EH_LSF1 %>%
@@ -308,3 +315,4 @@ performance::check_predictions(F1_Sur)
 ################################################################################
 # End of script
 ################################################################################
+
