@@ -72,7 +72,7 @@ summary(F1)
 # Model:
 #   Reproduction ~ Treatment * f(Day) + (1 | Plate)
 #   with generalized Poisson family and zero-inflation by Day.
-F1_age_dis <- glmmTMB(
+F1_age <- glmmTMB(
   Reproduction ~ Treatment * ns(as.numeric(Day), df = 3) + (1 | Plate),
   family    = genpois(),
   ziformula = ~ Day,
@@ -81,10 +81,10 @@ F1_age_dis <- glmmTMB(
   data      = F1
 )
 
-AIC(F1_age_dis)
+AIC(F1_age)
 
 # Diagnostics
-simulationoutput <- simulateResiduals(fittedModel = F1_age_dis, plot = TRUE)
+simulationoutput <- simulateResiduals(fittedModel = F1_age, plot = TRUE)
 plot(simulationoutput)
 testDispersion(simulationoutput)
 testZeroInflation(simulationoutput)
@@ -315,4 +315,5 @@ performance::check_predictions(F1_Sur)
 ################################################################################
 # End of script
 ################################################################################
+
 
