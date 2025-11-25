@@ -28,11 +28,9 @@ library(here)
 
 # OPTIONAL: pin the project root for 'here' (only needed once per machine)
 # This will create a small .here file in the root directory.
-if (is.null(here:::.here)) {
-  here::i_am("run_all.R")
-}
-
-cat("Project root is:", here(), "\n")
+getwd()  # should now be your repo root
+here::i_am("run_all.R")
+here::here()
 
 # Create standard output folders if they don't exist
 dirs_to_create <- c(
