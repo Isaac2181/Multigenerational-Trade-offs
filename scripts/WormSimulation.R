@@ -23,8 +23,6 @@
 # 1. Load required packages #
 #############################
 
-# (In the manuscript / README, list ggplot2 and progress as dependencies.)
-
 library(ggplot2)
 library(progress)
 
@@ -237,3 +235,4 @@ Plot
 # Optionally save:
 # ggsave(filename = here::here("outputs", "strategy_proportions.png"), Plot,
 #        width = 8, height = 6, dpi = 300)
+
