@@ -1,0 +1,61 @@
+﻿Plate,Treatment,D1,D2,D3,D4,D5,D6
+1,Control,13,130,145,23,0,0
+2,Control,58,102,73,19,0,0
+3,Control,40,170,76,0,0,0
+4,Control,48,141,81,5,0,0
+5,Control,42,129,134,13,5,0
+6,Control,37,136,94,1,0,0
+7,Control,16,132,90,24,4,0
+8,Control,41,134,23,4,2,0
+9,Control,44,150,98,14,0,0
+10,Control,45,165,77,0,1,0
+11,Control,48,124,109,2,0,0
+12,Control,66,175,26,17,4,0
+13,Control,29,131,106,6,1,0
+14,Control,26,68,40,30,30,0
+15,Control,34,143,72,13,6,0
+16,Control,48,144,42,12,5,0
+17,Control,34,122,99,3,0,0
+18,Control,52,121,108,3,0,0
+19,Control,36,163,50,1,0,0
+20,Control,31,116,107,47,2,0
+21,Control,58,118,67,29,21,0
+22,Control,43,119,104,24,0,0
+23,Control,31,118,110,27,2,0
+24,Control,45,107,92,18,3,0
+25,Control,54,110,45,15,21,0
+26,Control,42,99,58,52,20,0
+27,Control,,,,,0,0
+28,Control,42,92,65,21,16,0
+29,Control,46,96,95,68,1,0
+30,Control,54,80,46,36,12,0
+31,Larval Starvation,0,76,111,24,19,1
+32,Larval Starvation,0,16,101,62,23,0
+33,Larval Starvation,0,85,94,17,0,3
+34,Larval Starvation,0,17,103,84,38,0
+35,Larval Starvation,8,146,87,1,0,20
+36,Larval Starvation,0,29,93,43,12,3
+37,Larval Starvation,0,29,86,26,2,4
+38,Larval Starvation,0,17,101,34,5,0
+39,Larval Starvation,0,97,117,18,1,0
+40,Larval Starvation,0,65,96,69,34,0
+41,Larval Starvation,2,50,41,10,1,1
+42,Larval Starvation,,,,,,
+43,Larval Starvation,0,50,101,65,19,2
+44,Larval Starvation,0,64,0,0,0,0
+45,Larval Starvation,0,70,76,54,7,0
+46,Larval Starvation,0,51,87,55,24,5
+47,Larval Starvation,0,49,92,55,6,1
+48,Larval Starvation,0,34,79,55,38,35
+49,Larval Starvation,0,51,105,64,28,14
+50,Larval Starvation,0,58,98,35,19,3
+51,Larval Starvation,2,64,92,54,13,0
+52,Larval Starvation,0,13,68,27,21,2
+53,Larval Starvation,0,97,102,7,3,0
+54,Larval Starvation,5,78,123,38,3,0
+55,Larval Starvation,0,27,24,0,0,0
+56,Larval Starvation,0,64,93,76,29,4
+57,Larval Starvation,0,15,77,62,49,39
+58,Larval Starvation,0,71,108,16,0,0
+59,Larval Starvation,0,62,121,48,7,0
+60,Larval Starvation,0,46,83,64,16,10
