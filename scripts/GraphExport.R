@@ -90,6 +90,14 @@ sup_fig1 <- P0_plot_sup1 / forest_sup1 +
 
 sup_fig1
 
+ggsave(
+  filename = file.path(export_dir, "sup_fig1.svg"),
+  plot     = sup_fig1,
+  width    = 16,
+  height   = 12,
+  dpi      = 1200
+)
+
 ################################################################################
 # Supplementary Figure 2: F1 + F3 survival + forests                           #
 ################################################################################
@@ -122,6 +130,13 @@ sup_fig2 <- (forestF1_sup2 + forestF3_sup2) / F1_plot_sup2 / F3_plot_sup2 +
 sup_fig2 <- sup_fig2 + plot_layout(guides = "collect")
 
 sup_fig2
+ggsave(
+  filename = file.path(export_dir, "sup_fig2.svg"),
+  plot     = sup_fig2,
+  width    = 16,
+  height   = 12,
+  dpi      = 1200
+)
 
 ################################################################################
 # Figure 2: P0 LRS + fitness + age-specific reproduction                       #
@@ -135,7 +150,7 @@ Repro_big <- Repro_big +
   )
 
 FitP0_big <- bump_text(FitP0, axis = 24)
-LRS_big   <- bump_text(LRS)
+LRS_big   <- bump_text(LRS_plot)
 
 fig2 <- (LRS_big + FitP0_big) / Repro_big +
   plot_annotation(tag_levels = "A") &
