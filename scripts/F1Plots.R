@@ -1,6 +1,6 @@
 ################################################################################
 # Script: F1Plots.R
-# Author: Isaac Harriz
+# Author: Isaac Harris
 #
 # Purpose:
 #   Generate F1 figures:
@@ -295,12 +295,7 @@ FitF1 <- FitF1 +
 # 6. Age-specific reproduction curves                                          #
 ################################################################################
 
-# (Optional) mean values per Treatment–Day
-# mean_values <- aggregate(
-#   Reproduction ~ Treatment + Day,
-#   data = data,
-#   FUN  = mean
-# )
+
 
 ReproF1 <- ggplot(data, aes(x = Day, y = Reproduction, colour = Treatment)) +
   # Raw observations (light jitter)

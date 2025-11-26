@@ -32,7 +32,7 @@ library(here)        # reproducible file paths
 # 2. Read and tidy reproduction data   #
 ########################################
 
-# Reproduction data (originally "F3.csv" in L1arrest/data)
+# Reproduction data
 F3 <- read.csv(here("data", "F3.csv"))
 
 # Reshape from wide (one column per day) to long:
@@ -59,8 +59,8 @@ F3 <- F3 %>%
   filter(!any(is.na(Reproduction))) %>%
   ungroup()
 
-# Optional observation ID (kept from original script)
-F3$obsID <- seq_len(nrow(F3))
+# Optional observation ID
+#F3$obsID <- seq_len(nrow(F3))
 
 
 #########################################################
@@ -206,8 +206,7 @@ performance::check_predictions(F3_LRS)
 # 7. Survival analysis #
 ########################
 
-# Survival data (originally "C:/.../Mol/F3.csv")
-# Suggestion: place this file in /data/ as "F3_survival.csv"
+# Survival data
 LSF3 <- read.csv(here("data", "F3_survival.csv"))
 
 ## EH analysis without matricides censored

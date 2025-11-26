@@ -1,6 +1,6 @@
 ################################################################################
-# Script: P0Plots.R
-# Author: [Your Name]
+# Script: P0 Plots.R
+# Author: Isaac Harris
 #
 # Purpose:
 #   Generate:
@@ -13,7 +13,7 @@
 #    ├ data/
 #    │   └ P0repro.csv
 #    └ scripts/
-#        └ P0Plots.R
+#        └ P0 Plots.R
 ################################################################################
 
 #############################
@@ -261,12 +261,7 @@ FitP0
 # 6. Age-specific reproduction curves                                          #
 ################################################################################
 
-# Optional: mean per Treatment–Day (not strictly needed for plotting)
-# mean_values <- aggregate(
-#   Reproduction ~ Treatment + Day,
-#   data = data,
-#   FUN  = mean
-# )
+
 
 Repro <- ggplot(data, aes(x = Day, y = Reproduction, colour = Treatment)) +
   # Raw observations (jittered points)

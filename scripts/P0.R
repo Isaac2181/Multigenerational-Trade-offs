@@ -1,6 +1,6 @@
 ################################################################################
-# Script: P0_reproduction_survival_analysis.R
-# Author: [Your Name]
+# Script: P0.R
+# Author: Isaac Harris
 #
 # Purpose:
 #   Analyse age-specific reproduction, rate-sensitive fitness (Leslie matrices),
@@ -13,7 +13,7 @@
 #    │   ├ P0repro.csv
 #    │   └ P0GLMM.csv
 #    └ scripts/
-#        └ P0_reproduction_survival_analysis.R
+#        └ P0.R
 #
 # The script uses the {here} package for file paths, so it should be run
 # from within the project directory

@@ -71,10 +71,10 @@ y_enl <- function(p, title_size = 40, text_size = 40) {
 ################################################################################
 
 # Extract ggplot from ggsurvplot object if needed
-P0_plot <- if (inherits(P0, "ggsurvplot") || (is.list(P0) && !is.null(P0$plot))) {
-  P0$plot
+P0_plot <- if (inherits(P0splot, "ggsurvplot") || (is.list(P0splot) && !is.null(P0splot$plot))) {
+  P0splot$plot
 } else {
-  P0
+  P0splot
 }
 
 forest_sup1 <- bump_text(forest)
@@ -102,16 +102,16 @@ ggsave(
 # Supplementary Figure 2: F1 + F3 survival + forests                           #
 ################################################################################
 
-F1_plot <- if (inherits(F1, "ggsurvplot") || (is.list(F1) && !is.null(F1$plot))) {
-  F1$plot
+F1_plot <- if (inherits(F1splot, "ggsurvplot") || (is.list(F1splot) && !is.null(F1splot$plot))) {
+  F1splot$plot
 } else {
-  F1
+  F1splot
 }
 
-F3_plot <- if (inherits(F3, "ggsurvplot") || (is.list(F3) && !is.null(F3$plot))) {
-  F3$plot
+F3_plot <- if (inherits(F3splot, "ggsurvplot") || (is.list(F3splot) && !is.null(F3splot$plot))) {
+  F3splot$plot
 } else {
-  F3
+  F3splot
 }
 
 # For these, we also add panel grids

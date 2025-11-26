@@ -88,7 +88,7 @@ simulationoutput <- simulateResiduals(fittedModel = F1_age, plot = TRUE)
 plot(simulationoutput)
 testDispersion(simulationoutput)
 testZeroInflation(simulationoutput)
-performance::check_predictions(F1_age_dis)
+performance::check_predictions(F1_age)
 
 
 ##############################################
@@ -212,8 +212,6 @@ emmeans(F1_LRS, pairwise ~ Treatment)
 # 7. Survival analysis #
 ########################
 
-# Survival data (originally "C:/.../Mol/F1.csv")
-# Suggestion: put this file in /data/ as, e.g., "F1_survival.csv"
 LSF1 <- read.csv(here("data", "F1_survival.csv"))
 
 ## EH analysis without matricides censored

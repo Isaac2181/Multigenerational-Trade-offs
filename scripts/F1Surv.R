@@ -124,7 +124,7 @@ coxp <- signif(summary(cox)$coefficients[, 5], digits = 3)
 # 6. Kaplan–Meier survival plot (F1)     #
 ##########################################
 
-F1 <- ggsurvplot(
+F1splot <- ggsurvplot(
   fit1,
   data = data,
   legend.labs = c(
@@ -149,7 +149,7 @@ F1 <- ggsurvplot(
     )
 )
 
-F1  # prints the survival plot
+F1splot  # prints the survival plot
 ################################################################################
 # End of script                                                                #
 ################################################################################

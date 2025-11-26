@@ -295,12 +295,6 @@ FitF3 <- FitF3 +
 # 6. Age-specific reproduction curves                                          #
 ################################################################################
 
-# Optional mean values (not strictly needed for plotting)
-# mean_values <- aggregate(
-#   Reproduction ~ Treatment + Day,
-#   data = data,
-#   FUN  = mean
-# )
 
 # Build age-specific reproduction plot
 ReproF3 <- ggplot(data, aes(x = Day, y = Reproduction, colour = Treatment)) +
