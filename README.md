@@ -1,6 +1,7 @@
 # Evolutioanry Trade-offs Between Intergenerational and Transgenerational Fitness Effects
 
 This repository contains the full dataset and analysis scripts associated with the study "Evolutioanry Trade-offs Between Intergenerational and Transgenerational Fitness Effects".  
+
 All analyses were carried out in **R** and the repository provides a complete, reproducible workflow from raw data loading to figure and model output generation.
 
 ---
