@@ -62,7 +62,7 @@ The workflow generates:
 | Output type | Location | Details |
 |------------|----------|---------|
 | Figures | `/plots/` | Age-specific reproduction curves, LRS, Fitness, Survival |
-| Model tables | `/model_outputs/` | Mixed models + Cox survival outputs exported as `.docx` |
+| Model tables | `/model_outputs/` | Mixed model outputs exported as `.docx` |
 | data objects | In memory | Used for downstream models & figures |
 
 ---
