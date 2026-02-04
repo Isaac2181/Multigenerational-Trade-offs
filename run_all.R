@@ -55,6 +55,9 @@ source(here("scripts", "F1.R"))
 cat(">>> Running F3 analysis...\n")
 source(here("scripts", "F3.R"))
 
+cat(">>> Running transgenerational analysis...\n")
+source(here("scripts", "transgen.R"))
+
 #############################
 # 2. Simulation             #
 #############################

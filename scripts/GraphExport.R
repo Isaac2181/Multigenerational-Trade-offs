@@ -250,5 +250,38 @@ ggsave(
 )
 
 ################################################################################
-# End of script                                                                #
+# Supplementary Figure 3: Simulation parameters heatmap                        #
 ################################################################################
+supfig3 <- ggplot(param_grid, aes(x = f1, y = f3)) +
+  # The main heatmap with white outlines
+  geom_tile(aes(fill = outcome), colour = "black", size = 0.2) +
+  # The highlight square
+  geom_rect(aes(xmin = orig_f1 - 0.01, xmax = orig_f1 + 0.01, 
+                ymin = orig_f3 - 0.005, ymax = orig_f3 + 0.005, 
+                color = "Simulation Parameters"), 
+            fill = NA, size = 1.2) +
+  scale_fill_gradient2(low = "#D55E00", mid = "white", high = "#0072B2", 
+                       midpoint = 0.5, name = "Final Proportion of\nTransgenerational Strategy\n") +
+  
+  scale_color_manual(name = "", values = c("Simulation Parameters" = "red")) +
+  # Visual tweaks
+  labs(x = "Relative intergenerational fitness (F1)",
+       y = "Relative transgenerational fitness (F3)") +
+  theme_minimal() +
+  theme(
+    axis.title   = element_text(size = 30),
+    axis.text    = element_text(size = 25),
+    legend.key.size  = unit(1.5,"cm"),
+    panel.grid.major = element_line(colour = "grey"),
+    panel.grid.minor = element_line(colour = "grey"),
+    legend.title = element_text(size = 25),
+    legend.text  = element_text(size = 25)
+  ) + guides(color = guide_legend(override.aes = list(fill = NA))) # Keeps the legend box hollow
+
+ggsave(
+  filename = file.path(r"(C:\Users\isaac\OneDrive\Desktop\OneDrive - University of East Anglia\Projects\Project- L1arrest\Github\Multigenerational-Trade-offs\plots\Final\Export)","supfig3.svg"),
+  plot     = supfig3,
+  width    = 18,
+  height   = 12,
+  dpi      = 1200
+)

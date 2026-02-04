@@ -403,3 +403,161 @@ Plot2
 # ggsave(filename = here::here("outputs", "strategy_proportions.png"), Plot,
 #        width = 8, height = 6, dpi = 300)
 
+
+
+################################################################################
+#Heatmap of parameters                                                         #
+################################################################################
+
+library(parallel)
+
+run_worm_sim <- function(f1_effect, f3_effect) {
+  # Re-initialize local variables
+  Effects <- c(f1_effect, 1.0, f3_effect)
+  Food <- 1.0e+8
+  n_days <- 1000 # Shorter duration for the grid search
+  
+  cohorts <- list(
+    list(age = 0, size = 1, starvation = 1, strat = 1),
+    list(age = 0, size = 1, starvation = 0, strat = 0)
+  )
+  
+  for (day in 1:n_days) {
+
+    # Track changes made this iteration
+    new_cohorts   <- list()  # cohorts produced this day
+    tpop          <- 0       # total population this day
+    food_consumed <- 0       # total food consumed this day
+    t_count       <- 0       # number of transgenerational worms
+    c_count       <- 0       # number of control worms
+    
+    # Ageing and population calculations
+    for (i in seq_along(cohorts)) {
+      cohort <- cohorts[[i]]              # current cohort
+      cohort$age <- cohort$age + 1        # all worms age by 1 day
+      
+      # Update total population
+      tpop <- tpop + cohort$size
+      
+      # Split by strategy
+      if (cohort$strat == 1) {
+        t_count <- t_count + cohort$size
+      } else {
+        c_count <- c_count + cohort$size
+      }
+      
+      # Food consumption by age class
+      if (cohort$age == 1) {
+        # Eggs/L1/L2
+        food_consumed <- food_consumed + cohort$size * Eat[1]
+      } else if (cohort$age == 2) {
+        # L3/L4
+        food_consumed <- food_consumed + cohort$size * Eat[2]
+      } else if (cohort$age >= 3 && cohort$age <= 7) {
+        # Reproductive worms
+        food_consumed <- food_consumed + cohort$size * Eat[3]
+      } else {
+        # Post-reproductive worms
+        food_consumed <- food_consumed + cohort$size * Eat[4]
+      }
+      
+      # Reproduction (age-specific)
+      if (cohort$age > 2 && cohort$age <= 7) {  # reproductive age window
+        
+        # Default modifier (no transgenerational effect)
+        repro_modifier <- 1
+        
+        # Apply transgenerational effects for strategy 1 only
+        if (cohort$starvation == 1 && cohort$strat == 1) {
+          repro_modifier <- Effects[1]  # F1 effect
+        } else if (cohort$starvation == 2 && cohort$strat == 1) {
+          repro_modifier <- Effects[2]  # F2 effect
+        } else if (cohort$starvation >= 3 && cohort$strat == 1) {
+          repro_modifier <- Effects[3]  # F3+ effect
+        }
+        
+        # Eggs laid per worm at this age
+        rate <- R[cohort$age] * repro_modifier
+        
+        # New cohort of age 0; offspring inherit parental starvation history + 1
+        new_cohorts <- append(
+          new_cohorts,
+          list(
+            list(
+              age        = 0,
+              size       = floor(rate * cohort$size),
+              starvation = cohort$starvation + 1,
+              strat      = cohort$strat
+            )
+          )
+        )
+      }
+      
+      # Update cohort in the global list
+      cohorts[[i]] <- cohort
+    }
+    
+    # Update food supply
+    Food <- Food - food_consumed
+    
+    # Add newly produced cohorts to population
+    cohorts <- c(cohorts, new_cohorts)
+    
+    # Store total and strategy-specific population sizes
+    Pop[day]      <- tpop
+    transPop[day] <- t_count
+    conPop[day]   <- c_count
+    
+    # Store population data in a data frame (updated each iteration)
+    dataframepop <- data.frame(
+      Populationsize   = Pop,
+      Transgenerational = transPop,
+      control          = conPop
+    )
+    
+    # Optionally store food for debugging:
+    # Foods[day] <- Food 
+    
+    # Starvation event: food depleted
+    if (Food <= 0) {
+      
+      # Draw a random founding population size between 10 and 100
+      n_founders <- sample(10:100, 1)
+      
+      # Proportion of founders that are transgenerational vs control
+      nt <- n_founders * dataframepop$Transgenerational[day] /
+        dataframepop$Populationsize[day]
+      nc <- n_founders * dataframepop$control[day] /
+        dataframepop$Populationsize[day]
+      
+      # New founding cohorts (age 1 because founding occurs at larval arrest)
+      cohorts <- list(
+        list(age = 1, size = round(nt), starvation = 1, strat = 1),
+        list(age = 1, size = round(nc), starvation = 0, strat = 0)
+      )
+      
+      # Randomise the new food supply
+      Food <- rnorm(mean = 1e+8, sd = 1e+7, n = 1)
+    }
+  }
+  
+  # Return final proportion of transgenerational strategy
+  final_t_pro <- t_count / (t_count + c_count)
+  return(final_t_pro)
+}
+
+
+
+# Define ranges to test
+f1_range <- seq(1, 3, by = 0.02)
+f3_range <- seq(0.1, 1, by = 0.01)
+
+# Create the grid
+param_grid <- expand.grid(f1 = f1_range, f3 = f3_range)
+
+# Run the simulation for every combination
+param_grid$outcome <- mapply(run_worm_sim, param_grid$f1, param_grid$f3)
+
+# Define original parameters
+orig_f1 <- 2.0
+orig_f3 <- 0.5

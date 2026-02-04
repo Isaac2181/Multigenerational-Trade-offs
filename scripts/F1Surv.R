@@ -28,6 +28,22 @@ library(coxme)
 #   Plate          : grouping factor for random effect
 data <- read.csv(here("data", "F1_survival.csv"))
 
+
+data <- data %>%
+  mutate(
+    TreatmentCode = fct_recode(TreatmentCode,
+                           "Control(Control Parents)" = "cc",
+                           "Starved(Control Parents)" = "lc",
+                           "Control(Starved Parents)" = "cl",
+                           "Starved(Starved Parents)" = "ll"
+    ),
+    TreatmentCode = fct_relevel(TreatmentCode,
+                            "Control(Control Parents)",  # P0 Control -> F1 Control
+                            "Starved(Control Parents)",  # P0 Control -> F1 Starvation
+                            "Control(Starved Parents)",  # P0 Starvation -> F1 Control
+                            "Starved(Starved Parents)"   # P0 Starvation -> F1 Starvation
+    )
+  )
 ##########################################
 # 3. Survival object and Cox ME model    #
 ##########################################
@@ -129,15 +145,15 @@ F1splot <- ggsurvplot(
   data = data,
   legend.labs = c(
     "Control - Control",
-    "Control - Larval Starvation",
-    "Larval Starvation - Control",
-    "Larval Starvation - Larval Starvation"
+    "Starvation - Control",
+    "Control - Starvation",
+    "Starvation - Starvation"
   ),
   legend.title = "P0 - F1/F3",
   size         = 2,
   censor.size  = 5,
   xlab         = "Day",
-  palette      = c("#D55E00", "#0072B2", "#009E73", "#CC79A7"),
+  palette      = c("#D55E00","#009E73", "#0072B2", "#CC79A7"),
   ggtheme      = theme_classic() +
     theme(
       plot.title.position = "plot",

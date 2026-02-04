@@ -131,15 +131,15 @@ F3splot <- ggsurvplot(
   data = data,
   legend.labs = c(
     "Control - Control",
-    "Control - Larval Starvation",
-    "Larval Starvation - Control",
-    "Larval Starvation - Larval Starvation"
+    "Starvation - Control",
+    "Control - Starvation",
+    "Starvation - Starvation"
   ),
   legend.title = "P0 - F1/F3",
   size         = 2,
   censor.size  = 5,
   xlab         = "Day",
-  palette      = c("#D55E00", "#0072B2", "#009E73", "#CC79A7"),
+  palette      = c("#D55E00", "#009E73", "#0072B2", "#CC79A7"),
   ggtheme      = theme_classic() +
     theme(
       plot.title.position = "plot",

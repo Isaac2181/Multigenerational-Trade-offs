@@ -38,103 +38,112 @@ library(here)
 
 plot_violin_f3 <- function(
     data,
-    x,                     # grouping variable (factor/character)
-    y,                     # numeric outcome (e.g., LRS, fitness)
-    palette = NULL,        # vector of colors (one per group); NULL uses defaults
-    y_lab = "Lifetime \n Reproductive Success",
-    x_lab = NULL,
+    x,                       
+    y,                       
+    palette = NULL,          
+    y_lab = "Lifetime\nReproductive Success",
+    x_lab = "F3 Treatment",
     title = NULL,
     subtitle = NULL,
-    point_alpha = 0.4,
-    point_size = 4,
-    violin_alpha = 0.85,
-    box_alpha = 0.95,
-    width_violin = 0.9,
-    width_box = 0.2
+    point_alpha = 0.3,
+    point_size = 2.5,
+    violin_alpha = 0.8,
+    width_violin = 0.8
 ) {
   x <- enquo(x); y <- enquo(y)
   
-  # Prepare grouping levels and default palette
+  # 1. Prepare data
   df <- data %>%
     filter(!is.na(!!x), !is.na(!!y)) %>%
     mutate(.group = factor(!!x))
   
+  # 2. Setup Palette
   n_groups <- nlevels(df$.group)
   if (is.null(palette)) {
-    palette <- c(
-      "#D55E00",
-      "#0072B2",
-      "#009E73",
-      "#CC79A7"
-    )[seq_len(n_groups)]
+    palette <- c("#D55E00", "#0072B2", "#009E73", "#CC79A7")[seq_len(n_groups)]
   }
   
+  # 3. Dynamic Bracket Positions
+  max_y <- max(pull(df, !!y), na.rm = TRUE)
+  
+  # --- Calculate Heights ---
+  # Increase these multipliers to push brackets higher
+  bracket_height <- max_y * 1.45       # The horizontal line height
+  text_height    <- max_y * 1.55       # The text height (above the line)
+  whisker_bottom <- max_y * 1.20       # How far down the whiskers reach
+  
   p <- ggplot(df, aes(x = .group, y = !!y, fill = .group)) +
-    # Violin for distribution
+    # --- Geometries ---
     geom_violin(
-      width = width_violin,
-      alpha = violin_alpha,
-      color = NA,
-      trim  = FALSE,
-      scale = "width"
+      width = width_violin, alpha = violin_alpha,
+      color = NA, trim = FALSE, scale = "width"
     ) +
-    # Individual points (beeswarm avoids overplot)
     geom_quasirandom(
-      color       = "black",
-      dodge.width = 0.7,
-      varwidth    = FALSE,
-      alpha       = point_alpha,
-      size        = point_size
+      color = "black", dodge.width = 0.7, varwidth = FALSE,
+      alpha = point_alpha, size = point_size, stroke = 0
     ) +
-    # Mean point
     stat_summary(
-      fun   = mean,
-      geom  = "point",
-      shape = 20,
-      size  = 3,
-      fill  = "black",
-      color = "black"
+      fun = mean, geom = "point", shape = 21,
+      size = 3, fill = "white", color = "black", stroke = 1
     ) +
-    # Mean ± 95% CI
     stat_summary(
-      fun.data = mean_cl_normal,
-      geom     = "errorbar",
-      width    = 0.3,
-      color    = "black",
-      linewidth = 1.6
+      fun.data = mean_cl_normal, geom = "errorbar",
+      width = 0.2, color = "black", linewidth = 1
     ) +
+    
+    # --- Parent Grouping Brackets ---
+    
+    # === Bracket 1: Control Ancestors ===
+    # Horizontal line
+    annotate("segment", x = 1, xend = 2, y = bracket_height, yend = bracket_height, linewidth = 2) +
+    # Left Whisker
+    annotate("segment", x = 1, xend = 1, y = bracket_height, yend = whisker_bottom, linewidth = 2) +
+    # Right Whisker
+    annotate("segment", x = 2, xend = 2, y = bracket_height, yend = whisker_bottom, linewidth = 2) +
+    # Text Label
+    annotate("text", x = 1.5, y = text_height, label = "Control Ancestors", size = 8, fontface = "bold") +
+    
+    # === Bracket 2: Starved Ancestors ===
+    # Horizontal line
+    annotate("segment", x = 3, xend = 4, y = bracket_height, yend = bracket_height, linewidth = 2) +
+    # Left Whisker
+    annotate("segment", x = 3, xend = 3, y = bracket_height, yend = whisker_bottom, linewidth = 2) +
+    # Right Whisker
+    annotate("segment", x = 4, xend = 4, y = bracket_height, yend = whisker_bottom, linewidth = 2) +
+    # Text Label
+    annotate("text", x = 3.5, y = text_height, label = "Starved Ancestors", size = 8, fontface = "bold") +
+    
+    # --- Scales & Theme ---
     scale_fill_manual(values = palette) +
     scale_color_manual(values = palette) +
-    # Custom x-axis labels (will be overridden later by legendry brackets visually)
     scale_x_discrete(
-      labels = c("Control",
-                 "Starvation",
-                 "Control",
-                 "Starvation")
+      labels = c("Control", "Starvation", "Control", "Starvation")
     ) +
+    # Increased expansion at the top (0.3) to make room for the higher brackets
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.3))) +
+    
     labs(
-      x        = x_lab %||% rlang::as_name(x),
-      y        = y_lab,
-      title    = title,
+      x = x_lab,
+      y = y_lab,
+      title = title,
       subtitle = subtitle
     ) +
+    ylim(0,text_height) +
     guides(fill = "none", color = "none") +
-    theme_classic(base_size = 11) +
+    theme_classic(base_size = 14) +
     theme(
+      legend.key.size = unit(2,"cm"),
       plot.title.position = "plot",
-      plot.title          = element_text(face = "bold"),
-      axis.title.x        = element_blank(),
-      axis.title.y        = element_text(margin = margin(r = 8), size = 30),
-      axis.text           = element_text(color = "black", size = 25),
-      axis.ticks          = element_line(color = "black"),
-      strip.text          = element_text(size = 15),
-      strip.placement     = "outside"
-    ) +
-    coord_cartesian(clip = "off")
+      plot.title        = element_text(face = "bold"),
+      axis.title.y      = element_text(margin = margin(r = 15), size = 20),
+      axis.title.x      = element_text(margin = margin(t = 15), size = 26, face = "bold"),
+      axis.text         = element_text(color = "black", size = 24),
+      axis.ticks        = element_line(color = "black"),
+      coord.clip        = "off"
+    ) 
   
   return(p)
 }
-
 ################################################################################
 # 3. Load and clean F3 data                                                    #
 ################################################################################
@@ -183,40 +192,27 @@ LRS <- merge(
 #   "L(L)" = Starved (Starved Parents)
 LRS <- LRS %>%
   mutate(
-    Treatment = factor(
-      Treatment,
-      levels = c("C(C)", "L(C)", "C(L)", "L(L)")
+    Treatment = fct_recode(Treatment,
+                           "Control(Control Parents)" = "C(C)",
+                           "Starved(Control Parents)" = "L(C)",
+                           "Control(Starved Parents)" = "C(L)",
+                           "Starved(Starved Parents)" = "L(L)"
+    ),
+    Treatment = fct_relevel(Treatment,
+                            "Control(Control Parents)",  # P0 Control -> F1 Control
+                            "Starved(Control Parents)",  # P0 Control -> F1 Starvation
+                            "Control(Starved Parents)",  # P0 Starvation -> F1 Control
+                            "Starved(Starved Parents)"   # P0 Starvation -> F1 Starvation
     )
   )
-
-levels(LRS$Treatment) <- c(
-  "Control(Control Parents)",
-  "Starved(Control Parents)",
-  "Control(Starved Parents)",
-  "Starved(Starved Parents)"
-)
-
 # LRS plot
 LRSF3 <- plot_violin_f3(
   data = LRS,
   x    = Treatment,
-  y    = Reproduction
+  y    = Reproduction,
+  x_lab = "F3 Treatment"
 )
 
-# Add parental-condition brackets along x-axis using {legendry}
-LRSF3 <- LRSF3 +
-  guides(
-    x = compose_stack(
-      "axis_base",
-      primitive_bracket(
-        key_range_manual(
-          start = c(1, 3),
-          end   = c(2, 4),
-          name  = c("Control", "Starvation")
-        )
-      )
-    )
-  )
 
 ################################################################################
 # 5. Rate-sensitive fitness (Leslie λ)                                         #
@@ -257,39 +253,31 @@ fitness <- fitness %>%
 fitness$Plate     <- udata$Plate
 fitness$Treatment <- udata$Treatment
 
-fitness$Treatment <- factor(
-  fitness$Treatment,
-  levels = c("C(C)", "L(C)", "C(L)", "L(L)")
-)
-
-levels(fitness$Treatment) <- c(
-  "Control(Control Parents)",
-  "Starved(Control Parents)",
-  "Control(Starved Parents)",
-  "Starved(Starved Parents)"
-)
+fitness <- fitness %>%
+  mutate(
+    Treatment = fct_recode(Treatment,
+                           "Control(Control Parents)" = "C(C)",
+                           "Starved(Control Parents)" = "L(C)",
+                           "Control(Starved Parents)" = "C(L)",
+                           "Starved(Starved Parents)" = "L(L)"
+    ),
+    Treatment = fct_relevel(Treatment,
+                            "Control(Control Parents)",  # P0 Control -> F1 Control
+                            "Starved(Control Parents)",  # P0 Control -> F1 Starvation
+                            "Control(Starved Parents)",  # P0 Starvation -> F1 Control
+                            "Starved(Starved Parents)"   # P0 Starvation -> F1 Starvation
+    )
+  )
 
 # Fitness plot
 FitF3 <- plot_violin_f3(
   data  = fitness,
   x     = Treatment,
   y     = dominant_eigenvalues,
-  y_lab = "Fitness"
+  y_lab = "Fitness",
+  x_lab = "F3 Treatment"
 )
 
-FitF3 <- FitF3 +
-  guides(
-    x = compose_stack(
-      "axis_base",
-      primitive_bracket(
-        key_range_manual(
-          start = c(1, 3),
-          end   = c(2, 4),
-          name  = c("Control", "Starvation")
-        )
-      )
-    )
-  )
 
 ################################################################################
 # 6. Age-specific reproduction curves                                          #
@@ -375,6 +363,7 @@ ReproF3 <- ggplot(data, aes(x = Day, y = Reproduction, colour = Treatment)) +
   ) +
   theme_classic() +
   theme(
+    legend.key.size = unit(2,"cm"),
     axis.title       = element_text(size = 14),
     axis.title.x     = element_text(size = 30),
     axis.title.y     = element_text(margin = margin(r = 8), size = 30),
