@@ -550,6 +550,7 @@ F3LRS <- make_mixed_model_table(F3_LRS, title = "F3 Lifetime Reproductive Succes
 gt::gtsave(F3LRS, file = file.path(out_dir, "F3LRS.docx"))
 
 # Rate-sensitive fitness
+
 P0fit <- make_mixed_model_table(P0_fit, title = "P0 Rate Sensitive Fitness", pairwise_target = ~ Treatment)
 gt::gtsave(P0fit, file = file.path(out_dir, "P0fit.docx"))
 

@@ -102,7 +102,7 @@ plot_violin_f1 <- function(
     # Right Whisker
     annotate("segment", x = 2, xend = 2, y = bracket_height, yend = whisker_bottom, linewidth = 2) +
     # Text Label
-    annotate("text", x = 1.5, y = text_height, label = "Control Ancestors", size = 8, fontface = "bold") +
+    annotate("text", x = 1.5, y = text_height, label = "Control Ancestors", size = 10, fontface = "bold") +
     
     # === Bracket 2: Starved Ancestors ===
     # Horizontal line
@@ -112,7 +112,7 @@ plot_violin_f1 <- function(
     # Right Whisker
     annotate("segment", x = 4, xend = 4, y = bracket_height, yend = whisker_bottom, linewidth = 2) +
     # Text Label
-    annotate("text", x = 3.5, y = text_height, label = "Starved Ancestors", size = 8, fontface = "bold") +
+    annotate("text", x = 3.5, y = text_height, label = "Starved Ancestors", size = 10, fontface = "bold") +
     
     # --- Scales & Theme ---
     scale_fill_manual(values = palette) +

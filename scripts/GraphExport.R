@@ -59,7 +59,7 @@ bump_text <- function(p, base = 25, axis = 25, legend = 25,
 }
 
 # Y-axis emphasis helper
-y_enl <- function(p, title_size = 40, text_size = 40) {
+y_enl <- function(p, title_size = 38, text_size = 38) {
   p + theme(
     axis.title.y = element_text(size = title_size),
     axis.text.y  = element_text(size = text_size)
