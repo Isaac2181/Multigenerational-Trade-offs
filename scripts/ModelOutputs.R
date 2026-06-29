@@ -5,6 +5,8 @@
 # Purpose:
 #   Helper functions to turn mixed models (glmmTMB / lme4) into nicely formatted
 #   gt tables, and export them (e.g. as .docx) for reporting / supplements.
+#   Fixed-effect tables include approximated denominator df via glmmTMB's
+#   summary(..., ddf = "satterthwaite") (Kenward-Roger optional; lmerTest for LMMs).
 #
 # Requirements:
 #   - Models already fitted in the environment:
@@ -23,6 +25,115 @@ library(glmmTMB)
 library(lme4)
 
 ################################################################################
+# Helper: fixed effects with approximated df (glmmTMB / lmerTest)              #
+################################################################################
+.coef_table_from_summary <- function(ctab) {
+  if (is.null(ctab) || nrow(ctab) == 0) return(NULL)
+  
+  stat_col <- grep("value$", colnames(ctab), value = TRUE)[1]
+  p_col    <- grep("^Pr", colnames(ctab), value = TRUE)[1]
+  
+  fx <- data.frame(
+    term      = rownames(ctab),
+    estimate  = ctab[, "Estimate"],
+    std.error = ctab[, "Std. Error"],
+    statistic = if (!is.na(stat_col)) ctab[, stat_col] else ctab[, "Estimate"] / ctab[, "Std. Error"],
+    p.value   = if (!is.na(p_col)) ctab[, p_col] else NA_real_,
+    df        = {
+      df_col <- grep("^ddf?$", colnames(ctab), ignore.case = TRUE, value = TRUE)[1]
+      if (!is.na(df_col)) ctab[, df_col] else NA_real_
+    },
+    stringsAsFactors = FALSE
+  )
+  
+  crit <- ifelse(
+    !is.na(fx$df) & is.finite(fx$df),
+    stats::qt(0.975, fx$df),
+    stats::qnorm(0.975)
+  )
+  fx$conf.low  <- fx$estimate - crit * fx$std.error
+  fx$conf.high <- fx$estimate + crit * fx$std.error
+  fx
+}
+
+tidy_fixed_effects_with_df <- function(
+    model,
+    ddf = c("auto", "satterthwaite", "kenward-roger", "asymptotic")
+) {
+  ddf <- match.arg(ddf)
+  if (ddf == "auto") ddf <- "satterthwaite"
+  
+  if (inherits(model, "glmmTMB") && ddf != "asymptotic") {
+    sm <- try(summary(model, ddf = ddf), silent = TRUE)
+    if (!inherits(sm, "try-error")) {
+      fx <- .coef_table_from_summary(sm$coefficients$cond)
+      if (!is.null(fx) && any(is.finite(fx$df) & fx$df > 0)) {
+        return(list(fx = fx, ddf_used = ddf))
+      }
+    }
+  }
+  
+  if (inherits(model, "lmerMod") && ddf != "asymptotic" &&
+      requireNamespace("lmerTest", quietly = TRUE)) {
+    lt_model <- if (inherits(model, "lmerModLmerTest")) {
+      model
+    } else {
+      lmerTest::as_lmerModLmerTest(model)
+    }
+    lmer_ddf <- switch(ddf,
+      "satterthwaite" = "Satterthwaite",
+      "kenward-roger" = "Kenward"
+    )
+    sm <- try(summary(lt_model, ddf = lmer_ddf), silent = TRUE)
+    if (!inherits(sm, "try-error")) {
+      fx <- .coef_table_from_summary(coef(sm))
+      if (!is.null(fx) && any(is.finite(fx$df))) {
+        return(list(fx = fx, ddf_used = ddf))
+      }
+    }
+  }
+  
+  fx <- broom.mixed::tidy(model, effects = "fixed", conf.int = TRUE, conf.level = 0.95)
+  if (!"df" %in% names(fx)) fx$df <- NA_real_
+  list(fx = fx, ddf_used = "asymptotic")
+}
+
+.ddf_label <- function(ddf) {
+  switch(
+    ddf,
+    "satterthwaite" = "Satterthwaite",
+    "kenward-roger" = "Kenward-Roger",
+    "asymptotic" = "asymptotic (z)"
+  )
+}
+
+# emmeans needs the original data; model$call$data may no longer exist in the env.
+.recover_model_data <- function(model) {
+  if (inherits(model, "glmmTMB") && !is.null(model$frame) && nrow(model$frame) > 0) {
+    return(model$frame)
+  }
+  if (inherits(model, c("lmerMod", "glmerMod")) && !is.null(model@frame) && nrow(model@frame) > 0) {
+    return(model@frame)
+  }
+  data_sym <- model$call$data
+  if (is.null(data_sym)) return(NULL)
+  data_name <- tryCatch(as.character(data_sym), error = function(e) NULL)
+  if (length(data_name) == 1L && nzchar(data_name) &&
+      exists(data_name, envir = parent.frame(2L), inherits = TRUE)) {
+    return(get(data_name, envir = parent.frame(2L), inherits = TRUE))
+  }
+  tryCatch(eval(data_sym, envir = parent.frame(2L)), error = function(e) NULL)
+}
+
+# gt::gtsave can fail when overwriting an existing .docx (pandoc sees ".doc").
+.gtsave_docx <- function(data, filename) {
+  if (file.exists(filename)) {
+    unlink(filename)
+  }
+  gt::gtsave(data, filename = filename)
+}
+
+################################################################################
 # Helper: Mixed model table (GLMM / LMM)                                       #
 ################################################################################
 make_mixed_model_table <- function(
@@ -30,13 +141,14 @@ make_mixed_model_table <- function(
     title = "Mixed Model Summary",
     subtitle = NULL,
     anova_type = 2,
-    pairwise_target = NULL
+    pairwise_target = NULL,
+    ddf = c("auto", "satterthwaite", "kenward-roger", "asymptotic")
 ) {
+  ddf <- match.arg(ddf)
   stopifnot(requireNamespace("gt",          quietly = TRUE))
   stopifnot(requireNamespace("broom.mixed", quietly = TRUE))
   stopifnot(requireNamespace("car",         quietly = TRUE))
   stopifnot(requireNamespace("emmeans",     quietly = TRUE))
-  
   is_lme4    <- inherits(model, c("lmerMod", "glmerMod"))
   is_glmmTMB <- inherits(model, "glmmTMB")
   
@@ -49,8 +161,10 @@ make_mixed_model_table <- function(
     model_formula <- paste(deparse(formula(model, component = "cond")), collapse = " ")
   }
   
-  ## --- 2. Fixed effects with CI ------------------------------------
-  fx <- broom.mixed::tidy(model, effects = "fixed", conf.int = TRUE, conf.level = 0.95)
+  ## --- 2. Fixed effects with CI + approximated df ------------------
+  fx_res <- tidy_fixed_effects_with_df(model, ddf = ddf)
+  fx <- fx_res$fx
+  ddf_used <- fx_res$ddf_used
   if (!"df" %in% names(fx)) fx$df <- NA_real_
   
   fx$p.value_fmt <- ifelse(fx$p.value < 0.001, "<0.001", sprintf("%.3f", fx$p.value))
@@ -60,7 +174,7 @@ make_mixed_model_table <- function(
   fx$estimate  <- round(fx$estimate, 2)
   fx$std.error <- round(fx$std.error, 2)
   fx$statistic <- round(fx$statistic, 2)
-  fx$df_fmt    <- ifelse(is.na(fx$df), "", as.character(round(fx$df, 1)))
+  fx$df_fmt    <- ifelse(is.na(fx$df) | is.infinite(fx$df), "", as.character(round(fx$df, 1)))
   
   predictors_block <- data.frame(
     Block        = "Predictors",
@@ -157,10 +271,20 @@ make_mixed_model_table <- function(
   contrast_block <- NULL
   
   if (!is.null(pairwise_target)) {
-    # 1. Calculate Emmeans & Pairs
-    emm <- emmeans::emmeans(model, specs = pairwise_target)
+    emm_data <- .recover_model_data(model)
+    emm <- tryCatch(
+      if (!is.null(emm_data)) {
+        emmeans::emmeans(model, specs = pairwise_target, data = emm_data)
+      } else {
+        emmeans::emmeans(model, specs = pairwise_target)
+      },
+      error = function(e) {
+        warning("Post-hoc contrasts skipped: ", conditionMessage(e), call. = FALSE)
+        NULL
+      }
+    )
     
-    # 2. Robust Summary (Get Estimates + P-values in one table)
+    if (!is.null(emm)) {
     emm_pairs <- emmeans::contrast(emm, method = "pairwise", adjust = "tukey")
     s_pairs   <- as.data.frame(summary(emm_pairs, infer = c(TRUE, TRUE)))
     
@@ -203,6 +327,7 @@ make_mixed_model_table <- function(
         stringsAsFactors = FALSE
       )
     }
+    }
   }
   
   ## --- 6. Combine and Table ----------------------------------------
@@ -219,6 +344,13 @@ make_mixed_model_table <- function(
     gt::tab_options(table.font.size = gt::px(12), data_row.padding = gt::px(2)) |>
     gt::tab_header(title = title, subtitle = if(is.null(subtitle)) model_formula else subtitle)
   
+  if (any(is.finite(fx$df))) {
+    tbl <- tbl |>
+      gt::tab_source_note(
+        source_note = paste0("Coefficient df approximated via ", .ddf_label(ddf_used), " method.")
+      )
+  }
+  
   return(tbl)
 }
 
@@ -234,8 +366,10 @@ make_survival_table <- function(
     model,
     title = "Mixed Model Summary",
     subtitle = NULL,
-    anova_type = 2  # 2 = Type II, 3 = Type III
+    anova_type = 2,  # 2 = Type II, 3 = Type III
+    ddf = c("auto", "satterthwaite", "kenward-roger", "asymptotic")
 ) {
+  ddf <- match.arg(ddf)
   stopifnot(requireNamespace("gt", quietly = TRUE))
   stopifnot(requireNamespace("broom.mixed", quietly = TRUE))
   stopifnot(requireNamespace("car", quietly = TRUE))
@@ -285,8 +419,10 @@ make_survival_table <- function(
     if (!is.null(zi_formula) && zi_formula == "~0") zi_formula <- NULL
   }
   
-  ## --- 2. Fixed effects ---
-  fx <- broom.mixed::tidy(model, effects = "fixed")
+  ## --- 2. Fixed effects with approximated df ---
+  fx_res <- tidy_fixed_effects_with_df(model, ddf = ddf)
+  fx <- fx_res$fx
+  ddf_used <- fx_res$ddf_used
   if (!"df" %in% names(fx)) fx$df <- NA_real_
   fx$p.value_fmt <- ifelse(fx$p.value < 0.001, "<0.001", sprintf("%.3f", fx$p.value))
   
@@ -442,7 +578,7 @@ make_survival_table <- function(
   fixed_block$Estimate <- round_if_num(fixed_block$Estimate)
   fixed_block$StdError <- round_if_num(fixed_block$StdError)
   fixed_block$Statistic <- round_if_num(fixed_block$Statistic)
-  fixed_block$df <- ifelse(is.na(fixed_block$df), "", round(fixed_block$df, 1))
+  fixed_block$df <- ifelse(is.na(fixed_block$df) | is.infinite(fixed_block$df), "", round(fixed_block$df, 1))
   
   if (!is.null(random_disp) && nrow(random_disp) > 0) {
     random_disp$Value <- ifelse(is.numeric(random_disp$Value), round(random_disp$Value, 2), random_disp$Value)
@@ -516,6 +652,14 @@ make_survival_table <- function(
   }
   
   tbl <- tbl |> gt::tab_header(title = title, subtitle = subtitle_text)
+  
+  if (any(is.finite(fx$df))) {
+    tbl <- tbl |>
+      gt::tab_source_note(
+        source_note = paste0("Coefficient df approximated via ", .ddf_label(ddf_used), " method.")
+      )
+  }
+  
   return(tbl)
 }
 
@@ -531,48 +675,48 @@ if (!dir.exists(out_dir)) {
 
 # P0, F1, F3 – Age-specific reproduction
 P0ASR <- make_mixed_model_table(P0_age, title = "P0 Age Specific Reproduction")
-gt::gtsave(P0ASR, file = file.path(out_dir, "P0ASR.docx"))
+.gtsave_docx(P0ASR, file.path(out_dir, "P0ASR.docx"))
 
 F1ASR <- make_mixed_model_table(F1_age, title = "F1 Age Specific Reproduction")
-gt::gtsave(F1ASR, file = file.path(out_dir, "F1ASR.docx"))
+.gtsave_docx(F1ASR, file.path(out_dir, "F1ASR.docx"))
 
 F3ASR <- make_mixed_model_table(F3_age, title = "F3 Age Specific Reproduction")
-gt::gtsave(F3ASR, file = file.path(out_dir, "F3ASR.docx"))
+.gtsave_docx(F3ASR, file.path(out_dir, "F3ASR.docx"))
 
 # Lifetime Reproductive Success (LRS)
 P0LRS <- make_mixed_model_table(P0_LRS, title = "P0 Lifetime Reproductive Success", pairwise_target = ~ Treatment)
-gt::gtsave(P0LRS, file = file.path(out_dir, "P0LRS.docx"))
+.gtsave_docx(P0LRS, file.path(out_dir, "P0LRS.docx"))
 
 F1LRS <- make_mixed_model_table(F1_LRS, title = "F1 Lifetime Reproductive Success", pairwise_target = ~ Treatment)
-gt::gtsave(F1LRS, file = file.path(out_dir, "F1LRS.docx"))
+.gtsave_docx(F1LRS, file.path(out_dir, "F1LRS.docx"))
 
 F3LRS <- make_mixed_model_table(F3_LRS, title = "F3 Lifetime Reproductive Success", pairwise_target = ~ Treatment)
-gt::gtsave(F3LRS, file = file.path(out_dir, "F3LRS.docx"))
+.gtsave_docx(F3LRS, file.path(out_dir, "F3LRS.docx"))
 
 # Rate-sensitive fitness
 
 P0fit <- make_mixed_model_table(P0_fit, title = "P0 Rate Sensitive Fitness", pairwise_target = ~ Treatment)
-gt::gtsave(P0fit, file = file.path(out_dir, "P0fit.docx"))
+.gtsave_docx(P0fit, file.path(out_dir, "P0fit.docx"))
 
 F1fit <- make_mixed_model_table(F1_fit, title = "F1 Rate Sensitive Fitness", pairwise_target = ~ Treatment)
-gt::gtsave(F1fit, file = file.path(out_dir, "F1fit.docx"))
+.gtsave_docx(F1fit, file.path(out_dir, "F1fit.docx"))
 
 F3fit <- make_mixed_model_table(F3_fit, title = "F3 Rate Sensitive Fitness", pairwise_target = ~ Treatment)
-gt::gtsave(F3fit, file = file.path(out_dir, "F3fit.docx"))
+.gtsave_docx(F3fit, file.path(out_dir, "F3fit.docx"))
 
 # Survival models
 P0sur <- make_survival_table(P0_sur, title = "P0 Survival")
-gt::gtsave(P0sur, file = file.path(out_dir, "P0sur.docx"))
+.gtsave_docx(P0sur, file.path(out_dir, "P0sur.docx"))
 
 F1sur <- make_survival_table(F1_Sur, title = "F1 Survival")
-gt::gtsave(F1sur, file = file.path(out_dir, "F1sur.docx"))
+.gtsave_docx(F1sur, file.path(out_dir, "F1sur.docx"))
 
 F3sur <- make_survival_table(F3_surv, title = "F3 Survival")
-gt::gtsave(F3sur, file = file.path(out_dir, "F3sur.docx"))
+.gtsave_docx(F3sur, file.path(out_dir, "F3sur.docx"))
 
 # Transgen models
 transgenfit <- make_mixed_model_table(transgen_fit, title = "transgenerational Rate Sensitive Fitness")
-gt::gtsave(transgenfit, file = file.path(out_dir, "transgenfit.docx"))
+.gtsave_docx(transgenfit, file.path(out_dir, "transgenfit.docx"))
 
 transgenrepro <- make_mixed_model_table(transgen_LRS, title = "transgenerational LRS")
-gt::gtsave(transgenrepro, file = file.path(out_dir, "transgenLRS.docx"))
+.gtsave_docx(transgenrepro, file.path(out_dir, "transgenLRS.docx"))
